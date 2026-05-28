@@ -1,0 +1,283 @@
+name: Build AviumUI (equuleus)
+
+on:
+  # 手动触发，可选择是否清理缓存
+  workflow_dispatch:
+    inputs:
+      clean_build:
+        description: '完全清理后重新编译'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  DEVICE: equuleus
+  BRANCH: avium-16.2
+  USE_CCACHE: 1
+  CCACHE_SIZE: 50G
+  # 时区设置
+  TZ: Asia/Shanghai
+
+jobs:
+  build:
+    runs-on: self-hosted
+    timeout-minutes: 720  # 12小时超时，编译很耗时
+
+    steps:
+      - name: 环境检查
+        run: |
+          echo "=== 系统信息 ==="
+          uname -a
+          echo ""
+          echo "=== 磁盘空间 ==="
+          df -h /
+          echo ""
+          echo "=== 内存信息 ==="
+          free -h
+          echo ""
+          echo "=== CPU 信息 ==="
+          nproc
+          echo ""
+          # 检查可用空间是否足够（至少需要150GB）
+          FREE_GB=$(df / --output=avail -BG | tail -1 | tr -d ' G')
+          echo "可用空间: ${FREE_GB}GB"
+          if [ "$FREE_GB" -lt 150 ]; then
+            echo "⚠️ 警告: 可用空间不足150GB，编译可能失败！"
+          fi
+
+      - name: 清理旧工作区（可选）
+        if: github.event.inputs.clean_build == 'true'
+        run: |
+          echo "完全清理模式，删除旧的源码..."
+          rm -rf ~/android/avium || true
+
+      - name: 初始化工作区
+        run: |
+          # 创建源码目录
+          mkdir -p ~/android/avium
+          cd ~/android/avium
+          
+          # 如果已存在源码，只做增量同步
+          if [ -d ".repo" ]; then
+            echo "检测到已有源码，将进行增量同步..."
+          else
+            echo "首次运行，将完整同步源码..."
+          fi
+
+      - name: 安装依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc bison build-essential ccache curl flex g++-multilib \
+            gcc-multilib git git-lfs gnupg gperf imagemagick \
+            protobuf-compiler python3-protobuf lib32readline-dev \
+            lib32z1-dev libdw-dev libelf-dev lz4 libsdl1.2-dev \
+            libssl-dev libxml2 libxml2-utils lzop pngcrush rsync \
+            schedtool squashfs-tools xsltproc zip zlib1g-dev \
+            python3 git curl aria2
+
+      - name: 安装 repo 工具
+        run: |
+          mkdir -p ~/bin
+          if [ ! -f ~/bin/repo ]; then
+            curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+            chmod a+x ~/bin/repo
+          fi
+          export PATH=~/bin:$PATH
+          repo --version
+
+      - name: 配置 Git
+        run: |
+          git config --global user.name "huanghao680"
+          git config --global user.email "huanghao680@users.noreply.github.com"
+          # 大文件支持
+          git lfs install
+
+      - name: 配置 ccache
+        run: |
+          ccache -M ${CCACHE_SIZE}
+          ccache -z
+          echo "ccache 配置完成"
+
+      - name: 同步 AviumUI 源码
+        working-directory: ~/android/avium
+        run: |
+          export PATH=~/bin:$PATH
+          
+          if [ -d ".repo" ]; then
+            echo "=== 增量同步源码 ==="
+            repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --optimized-fetch || true
+          else
+            echo "=== 首次同步源码（这需要几个小时）==="
+            repo init -u https://github.com/AviumUI/android_manifests -b ${BRANCH} --git-lfs
+            repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+          fi
+          
+          echo "源码同步完成"
+
+      - name: 下载设备树和驱动
+        working-directory: ~/android/avium
+        run: |
+          echo "=== 克隆设备树 ==="
+          
+          # SDM845 通用设备树
+          if [ ! -d "device/xiaomi/sdm845-common" ]; then
+            git clone https://github.com/LineageOS/android_device_xiaomi_sdm845-common.git \
+              -b lineage-23.2 device/xiaomi/sdm845-common
+          fi
+          
+          # equuleus 专用设备树
+          if [ ! -d "device/xiaomi/equuleus" ]; then
+            git clone https://github.com/LineageOS/android_device_xiaomi_equuleus.git \
+              -b lineage-23.2 device/xiaomi/equuleus
+          fi
+          
+          # hardware_xiaomi
+          if [ ! -d "hardware/xiaomi" ]; then
+            git clone https://github.com/LineageOS/android_hardware_xiaomi.git \
+              -b lineage-23.2 hardware/xiaomi
+          fi
+          
+          echo "=== 克隆内核源码 ==="
+          if [ ! -d "kernel/xiaomi/sdm845" ]; then
+            git clone https://github.com/LineageOS/android_kernel_xiaomi_sdm845.git \
+              -b lineage-22.2 kernel/xiaomi/sdm845
+          fi
+          
+          echo "=== 克隆 Vendor 私有文件 ==="
+          # 通用 Vendor
+          if [ ! -d "vendor/xiaomi/sdm845-common" ]; then
+            git clone https://github.com/niclimcy/proprietary_vendor_xiaomi_sdm845-common.git \
+              -b lineage-23.2 vendor/xiaomi/sdm845-common
+          fi
+          
+          # equuleus 专用 Vendor
+          if [ ! -d "vendor/xiaomi/equuleus" ]; then
+            git clone https://github.com/duckyduckG/proprietary_vendor_xiaomi_equuleus_419.git \
+              -b lineage-23.2 vendor/xiaomi/equuleus
+          fi
+          
+          echo "=== 所有仓库克隆完成 ==="
+
+      - name: 验证目录结构
+        working-directory: ~/android/avium
+        run: |
+          echo "=== 检查关键目录 ==="
+          DIRS=(
+            "device/xiaomi/sdm845-common"
+            "device/xiaomi/equuleus"
+            "hardware/xiaomi"
+            "kernel/xiaomi/sdm845"
+            "vendor/xiaomi/sdm845-common"
+            "vendor/xiaomi/equuleus"
+          )
+          
+          ALL_OK=true
+          for dir in "${DIRS[@]}"; do
+            if [ -d "$dir" ]; then
+              echo "✅ $dir"
+            else
+              echo "❌ $dir 不存在!"
+              ALL_OK=false
+            fi
+          done
+          
+          if [ "$ALL_OK" = false ]; then
+            echo "目录验证失败，中止编译"
+            exit 1
+          fi
+          
+          echo ""
+          echo "=== 磁盘空间（编译前）==="
+          df -h /
+
+      - name: 开始编译
+        working-directory: ~/android/avium
+        run: |
+          export PATH=~/bin:$PATH
+          
+          echo "=========================================="
+          echo "  开始编译 AviumUI for equuleus"
+          echo "  时间: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "=========================================="
+          
+          # 初始化编译环境
+          source build/envsetup.sh
+          
+          # 设置编译目标
+          breakfast ${DEVICE}
+          
+          # 开始编译 (userdebug 版本)
+          brunch ${DEVICE} userdebug 2>&1 | tee build.log
+          
+          BUILD_EXIT=$?
+          
+          echo ""
+          echo "=========================================="
+          if [ $BUILD_EXIT -eq 0 ]; then
+            echo "  ✅ 编译成功！"
+          else
+            echo "  ❌ 编译失败 (exit code: $BUILD_EXIT)"
+          fi
+          echo "  时间: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "=========================================="
+          
+          exit $BUILD_EXIT
+
+      - name: 收集编译产物
+        if: success()
+        working-directory: ~/android/avium
+        run: |
+          echo "=== 收集编译产物 ==="
+          
+          PRODUCT_DIR="out/target/product/${DEVICE}"
+          
+          # 创建产物目录
+          mkdir -p build-output
+          
+          # 复制刷机包
+          cp ${PRODUCT_DIR}/*.zip build-output/ 2>/dev/null || true
+          
+          # 复制其他有用文件
+          cp ${PRODUCT_DIR}/recovery.img build-output/ 2>/dev/null || true
+          cp ${PRODUCT_DIR}/boot.img build-output/ 2>/dev/null || true
+          
+          # 生成构建信息
+          cat > build-output/build-info.txt << EOF
+          AviumUI Build Info
+          ==================
+          Device: ${DEVICE}
+          Branch: ${BRANCH}
+          Build Type: userdebug
+          Build Date: $(date '+%Y-%m-%d %H:%M:%S')
+          Git Commit: $(git -C kernel/xiaomi/sdm845 log --oneline -1 2>/dev/null || echo "N/A")
+          Kernel: $(cat ${PRODUCT_DIR}/build_fingerprint.txt 2>/dev/null || echo "N/A")
+          EOF
+          
+          echo "=== 产物列表 ==="
+          ls -lh build-output/
+          
+          echo ""
+          echo "=== 编译后磁盘空间 ==="
+          df -h /
+
+      - name: 上传编译产物
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AviumUI-${DEVICE}-$(date +%Y%m%d)
+          path: ~/android/avium/build-output/
+          retention-days: 7
+          compression-level: 1  # 快速压缩，产物通常已经压缩过了
+
+      - name: 编译统计
+        if: always()
+        working-directory: ~/android/avium
+        run: |
+          echo "=== 编译统计 ==="
+          if [ -f "build.log" ]; then
+            echo "编译日志大小: $(du -h build.log | cut -f1)"
+            echo "编译耗时: $(grep -o 'real.*' build.log | tail -1 || echo 'N/A')"
+          fi
+          echo "ccache 命中率:"
+          ccache -s | grep "cache hit" || true
