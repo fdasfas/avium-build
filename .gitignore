@@ -1,0 +1,15 @@
+# 编译产物
+*.zip
+*.img
+*.apk
+build-output/
+build.log
+
+# 临时文件
+*.tmp
+*.swp
+*~
+.DS_Store
+
+# 日志
+*.log
