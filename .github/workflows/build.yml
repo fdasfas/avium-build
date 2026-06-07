@@ -126,7 +126,7 @@ jobs:
           fi
 
           # hardware_oplus
-          if [ ! -d "hardware/xiaomi" ]; then
+          if [ ! -d "hardware/oplus" ]; then
             git clone https://github.com/LineageOS/android_hardware_oplus.git \
               -b lineage-23.2 hardware/oplus
           fi
@@ -243,7 +243,7 @@ jobs:
           Branch: ${BRANCH}
           Build Type: userdebug
           Build Date: $(date '+%Y-%m-%d %H:%M:%S')
-          Git Commit: $(git -C kernel/xiaomi/sdm845 log --oneline -1 2>/dev/null || echo "N/A")
+          Git Commit: $(git -C kernel/oneplus/sm8750 log --oneline -1 2>/dev/null || echo "N/A")
           Kernel: $(cat ${PRODUCT_DIR}/build_fingerprint.txt 2>/dev/null || echo "N/A")
           EOF
 
