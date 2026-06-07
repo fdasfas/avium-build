@@ -1,4 +1,4 @@
-name: Build AviumUI (equuleus)
+name: Build AviumUI (dodge)
 
 on:
   # 手动触发，可选择是否清理缓存
@@ -11,7 +11,7 @@ on:
         type: boolean
 
 env:
-  DEVICE: equuleus
+  DEVICE: dodge
   BRANCH: avium-16.2
   USE_CCACHE: 1
   CCACHE_SIZE: 50G
@@ -56,7 +56,7 @@ jobs:
           # 创建源码目录
           mkdir -p ~/android/avium
           cd ~/android/avium
-          
+
           # 如果已存在源码，只做增量同步
           if [ -d ".repo" ]; then
             echo "检测到已有源码，将进行增量同步..."
@@ -67,14 +67,7 @@ jobs:
       - name: 安装依赖
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            bc bison build-essential ccache curl flex g++-multilib \
-            gcc-multilib git git-lfs gnupg gperf imagemagick \
-            protobuf-compiler python3-protobuf lib32readline-dev \
-            lib32z1-dev libdw-dev libelf-dev lz4 libsdl1.2-dev \
-            libssl-dev libxml2 libxml2-utils lzop pngcrush rsync \
-            schedtool squashfs-tools xsltproc zip zlib1g-dev \
-            python3 git curl aria2
+          sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc xxd zip zlib1g-dev
 
       - name: 安装 repo 工具
         run: |
@@ -88,8 +81,8 @@ jobs:
 
       - name: 配置 Git
         run: |
-          git config --global user.name "huanghao680"
-          git config --global user.email "huanghao680@users.noreply.github.com"
+          git config --global user.name "shadow2112"
+          git config --global user.email "shadow2112@qq.com"
           # 大文件支持
           git lfs install
 
@@ -103,7 +96,7 @@ jobs:
         working-directory: ~/android/avium
         run: |
           export PATH=~/bin:$PATH
-          
+
           if [ -d ".repo" ]; then
             echo "=== 增量同步源码 ==="
             repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --optimized-fetch || true
@@ -112,51 +105,51 @@ jobs:
             repo init -u https://github.com/AviumUI/android_manifests -b ${BRANCH} --git-lfs
             repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
           fi
-          
+
           echo "源码同步完成"
 
       - name: 下载设备树和驱动
         working-directory: ~/android/avium
         run: |
           echo "=== 克隆设备树 ==="
-          
-          # SDM845 通用设备树
-          if [ ! -d "device/xiaomi/sdm845-common" ]; then
-            git clone https://github.com/LineageOS/android_device_xiaomi_sdm845-common.git \
-              -b lineage-23.2 device/xiaomi/sdm845-common
+
+          # sm8750 通用设备树
+          if [ ! -d "device/oneplus/sm8750-common" ]; then
+            git clone https://github.com/LineageOS/android_device_oneplus_sm8750-common.git \
+              -b lineage-23.2 device/oneplus/sm8750-common
           fi
-          
-          # equuleus 专用设备树
-          if [ ! -d "device/xiaomi/equuleus" ]; then
-            git clone https://github.com/LineageOS/android_device_xiaomi_equuleus.git \
-              -b lineage-23.2 device/xiaomi/equuleus
+
+          # dodge 专用设备树
+          if [ ! -d "device/oneplus/dodge" ]; then
+            git clone https://github.com/LineageOS/android_device_oneplus_dodge.git \
+              -b lineage-23.2 device/oneplus/dodge
           fi
-          
-          # hardware_xiaomi
+
+          # hardware_oplus
           if [ ! -d "hardware/xiaomi" ]; then
-            git clone https://github.com/LineageOS/android_hardware_xiaomi.git \
-              -b lineage-23.2 hardware/xiaomi
+            git clone https://github.com/LineageOS/android_hardware_oplus.git \
+              -b lineage-23.2 hardware/oplus
           fi
-          
+
           echo "=== 克隆内核源码 ==="
-          if [ ! -d "kernel/xiaomi/sdm845" ]; then
-            git clone https://github.com/LineageOS/android_kernel_xiaomi_sdm845.git \
-              -b lineage-22.2 kernel/xiaomi/sdm845
+          if [ ! -d "kernel/oneplus/sm8750" ]; then
+            git clone https://github.com/LineageOS/android_kernel_oneplus_sm8750.git \
+              -b lineage-22.2 kernel/oneplus/sm8750
           fi
-          
+
           echo "=== 克隆 Vendor 私有文件 ==="
           # 通用 Vendor
-          if [ ! -d "vendor/xiaomi/sdm845-common" ]; then
-            git clone https://github.com/niclimcy/proprietary_vendor_xiaomi_sdm845-common.git \
-              -b lineage-23.2 vendor/xiaomi/sdm845-common
+          if [ ! -d "vendor/oneplus/sm8750-common" ]; then
+            git clone https://github.com/TheMuppets/proprietary_vendor_oneplus_sm8750-common.git \
+              -b lineage-23.2 vendor/oneplus/sm8750-common
           fi
-          
-          # equuleus 专用 Vendor
-          if [ ! -d "vendor/xiaomi/equuleus" ]; then
-            git clone https://github.com/duckyduckG/proprietary_vendor_xiaomi_equuleus_419.git \
-              -b lineage-23.2 vendor/xiaomi/equuleus
+
+          # dodge 专用 Vendor
+          if [ ! -d "vendor/oneplus/dodge" ]; then
+            git clone https://github.com/TheMuppets/proprietary_vendor_oneplus_dodge.git \
+              -b lineage-23.2 vendor/oneplus/dodge
           fi
-          
+
           echo "=== 所有仓库克隆完成 ==="
 
       - name: 验证目录结构
@@ -164,14 +157,14 @@ jobs:
         run: |
           echo "=== 检查关键目录 ==="
           DIRS=(
-            "device/xiaomi/sdm845-common"
-            "device/xiaomi/equuleus"
-            "hardware/xiaomi"
-            "kernel/xiaomi/sdm845"
-            "vendor/xiaomi/sdm845-common"
-            "vendor/xiaomi/equuleus"
+            "device/oneplus/sm8750-common"
+            "device/oneplus/dodge"
+            "hardware/oplus"
+            "kernel/oneplus/sm8750"
+            "vendor/oneplus/sm8750-common"
+            "vendor/oneplus/dodge"
           )
-          
+
           ALL_OK=true
           for dir in "${DIRS[@]}"; do
             if [ -d "$dir" ]; then
@@ -181,12 +174,12 @@ jobs:
               ALL_OK=false
             fi
           done
-          
+
           if [ "$ALL_OK" = false ]; then
             echo "目录验证失败，中止编译"
             exit 1
           fi
-          
+
           echo ""
           echo "=== 磁盘空间（编译前）==="
           df -h /
@@ -195,23 +188,23 @@ jobs:
         working-directory: ~/android/avium
         run: |
           export PATH=~/bin:$PATH
-          
+
           echo "=========================================="
-          echo "  开始编译 AviumUI for equuleus"
+          echo "  开始编译 AviumUI for dodge"
           echo "  时间: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "=========================================="
-          
+
           # 初始化编译环境
           source build/envsetup.sh
-          
+
           # 设置编译目标
           breakfast ${DEVICE}
-          
+
           # 开始编译 (userdebug 版本)
           brunch ${DEVICE} userdebug 2>&1 | tee build.log
-          
+
           BUILD_EXIT=$?
-          
+
           echo ""
           echo "=========================================="
           if [ $BUILD_EXIT -eq 0 ]; then
@@ -221,7 +214,7 @@ jobs:
           fi
           echo "  时间: $(date '+%Y-%m-%d %H:%M:%S')"
           echo "=========================================="
-          
+
           exit $BUILD_EXIT
 
       - name: 收集编译产物
@@ -229,19 +222,19 @@ jobs:
         working-directory: ~/android/avium
         run: |
           echo "=== 收集编译产物 ==="
-          
+
           PRODUCT_DIR="out/target/product/${DEVICE}"
-          
+
           # 创建产物目录
           mkdir -p build-output
-          
+
           # 复制刷机包
           cp ${PRODUCT_DIR}/*.zip build-output/ 2>/dev/null || true
-          
+
           # 复制其他有用文件
           cp ${PRODUCT_DIR}/recovery.img build-output/ 2>/dev/null || true
           cp ${PRODUCT_DIR}/boot.img build-output/ 2>/dev/null || true
-          
+
           # 生成构建信息
           cat > build-output/build-info.txt << EOF
           AviumUI Build Info
@@ -253,10 +246,10 @@ jobs:
           Git Commit: $(git -C kernel/xiaomi/sdm845 log --oneline -1 2>/dev/null || echo "N/A")
           Kernel: $(cat ${PRODUCT_DIR}/build_fingerprint.txt 2>/dev/null || echo "N/A")
           EOF
-          
+
           echo "=== 产物列表 ==="
           ls -lh build-output/
-          
+
           echo ""
           echo "=== 编译后磁盘空间 ==="
           df -h /
