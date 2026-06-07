@@ -20,7 +20,7 @@ env:
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-24.04
     timeout-minutes: 720  # 12小时超时，编译很耗时
 
     steps:
