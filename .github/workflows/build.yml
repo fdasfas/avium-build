@@ -93,7 +93,7 @@ jobs:
           echo "ccache 配置完成"
 
       - name: 同步 AviumUI 源码
-        working-directory: ~/android/avium
+        working-directory: ${{ github.workspace }}/android/avium
         run: |
           export PATH=~/bin:$PATH
 
@@ -109,7 +109,7 @@ jobs:
           echo "源码同步完成"
 
       - name: 下载设备树和驱动
-        working-directory: ~/android/avium
+        working-directory: ${{ github.workspace }}/android/avium
         run: |
           echo "=== 克隆设备树 ==="
 
@@ -153,7 +153,7 @@ jobs:
           echo "=== 所有仓库克隆完成 ==="
 
       - name: 验证目录结构
-        working-directory: ~/android/avium
+        working-directory: ${{ github.workspace }}/android/avium
         run: |
           echo "=== 检查关键目录 ==="
           DIRS=(
@@ -185,7 +185,7 @@ jobs:
           df -h /
 
       - name: 开始编译
-        working-directory: ~/android/avium
+        working-directory: ${{ github.workspace }}/android/avium
         run: |
           export PATH=~/bin:$PATH
 
@@ -219,7 +219,7 @@ jobs:
 
       - name: 收集编译产物
         if: success()
-        working-directory: ~/android/avium
+        working-directory: ${{ github.workspace }}/android/avium
         run: |
           echo "=== 收集编译产物 ==="
 
@@ -265,7 +265,7 @@ jobs:
 
       - name: 编译统计
         if: always()
-        working-directory: ~/android/avium
+        working-directory: ${{ github.workspace }}/android/avium
         run: |
           echo "=== 编译统计 ==="
           if [ -f "build.log" ]; then
