@@ -49,13 +49,13 @@ jobs:
         if: github.event.inputs.clean_build == 'true'
         run: |
           echo "完全清理模式，删除旧的源码..."
-          rm -rf ~/android/avium || true
+          rm -rf ${{ github.workspace }}android/avium || true
 
       - name: 初始化工作区
         run: |
           # 创建源码目录
-          mkdir -p ~/android/avium
-          cd ~/android/avium
+          mkdir -p ${{ github.workspace }}android/avium
+          cd ${{ github.workspace }}android/avium
 
           # 如果已存在源码，只做增量同步
           if [ -d ".repo" ]; then
@@ -71,12 +71,12 @@ jobs:
 
       - name: 安装 repo 工具
         run: |
-          mkdir -p ~/bin
-          if [ ! -f ~/bin/repo ]; then
-            curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-            chmod a+x ~/bin/repo
+          mkdir -p ${{ github.workspace }}bin
+          if [ ! -f ${{ github.workspace }}bin/repo ]; then
+            curl https://storage.googleapis.com/git-repo-downloads/repo > ${{ github.workspace }}bin/repo
+            chmod a+x ${{ github.workspace }}bin/repo
           fi
-          export PATH=~/bin:$PATH
+          export PATH=${{ github.workspace }}bin:$PATH
           repo --version
 
       - name: 配置 Git
@@ -95,7 +95,7 @@ jobs:
       - name: 同步 AviumUI 源码
         working-directory: ${{ github.workspace }}/android/avium
         run: |
-          export PATH=~/bin:$PATH
+          export PATH=${{ github.workspace }}bin:$PATH
 
           if [ -d ".repo" ]; then
             echo "=== 增量同步源码 ==="
@@ -187,7 +187,7 @@ jobs:
       - name: 开始编译
         working-directory: ${{ github.workspace }}/android/avium
         run: |
-          export PATH=~/bin:$PATH
+          export PATH=${{ github.workspace }}bin:$PATH
 
           echo "=========================================="
           echo "  开始编译 AviumUI for dodge"
@@ -259,7 +259,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: AviumUI-${DEVICE}-$(date +%Y%m%d)
-          path: ~/android/avium/build-output/
+          path: ${{ github.workspace }}android/avium/build-output/
           retention-days: 7
           compression-level: 1  # 快速压缩，产物通常已经压缩过了
 
