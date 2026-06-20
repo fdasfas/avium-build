@@ -38,7 +38,7 @@ chmod +x setup-runner.sh
 
 ## ⚙️ 编译配置
 
-- **编译目标**: `equuleus userdebug`
+- **编译目标**: `dodge userdebug`
 - **源码分支**: AviumUI avium-16.2
 - **设备树**: LineageOS lineage-23.2
 - **内核**: LineageOS lineage-22.2 (SDM845)
