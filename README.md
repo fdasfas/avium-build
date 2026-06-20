@@ -1,12 +1,11 @@
 # AviumUI equuleus 自动编译
 
-> 🤖 使用 GitHub Actions 自动编译 AviumUI (Android 16) for 小米8屏幕指纹版
-
+> 🤖 使用 GitHub Actions 自动编译 AviumUI (Android 16) for 一加13
 ## 📱 适用设备
 
 | 项目 | 信息 |
 |------|------|
-| 设备 | 小米8屏幕指纹版 (equuleus) |
+| 设备 | 一加13 (dodge) |
 | SoC | Qualcomm Snapdragon 845 |
 | Android | 16 (QPR2) |
 | ROM | AviumUI |
@@ -97,9 +96,7 @@ chmod +x setup-runner.sh
 
 - [AviumUI](https://github.com/AviumUI) — ROM 开发团队
 - [LineageOS](https://lineageos.org) — 设备树和内核源码
-- [duckyduckG](https://github.com/duckyduckG) — equuleus vendor 维护
-- [niclimcy](https://github.com/niclimcy) — sdm845-common vendor 维护
-
+- [TheMuppets](https://github.com/TheMuppets) — dodge vendor 维护
 ---
 
 *本项目仅供学习交流使用，刷机有风险，操作需谨慎。*
