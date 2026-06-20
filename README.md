@@ -6,7 +6,7 @@
 | 项目 | 信息 |
 |------|------|
 | 设备 | 一加13 (dodge) |
-| SoC | Qualcomm Snapdragon 845 |
+| SoC | Qualcomm Snapdragon 8 Elite |
 | Android | 16 (QPR2) |
 | ROM | AviumUI |
 
