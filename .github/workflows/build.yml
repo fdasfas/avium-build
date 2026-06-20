@@ -180,6 +180,7 @@ jobs:
             "kernel/oneplus/sm8750-devicetrees"
             "vendor/oneplus/sm8750-common"
             "vendor/oneplus/dodge"
+            "hardware/oplus"
           )
 
           ALL_OK=true
