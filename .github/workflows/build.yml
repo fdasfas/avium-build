@@ -99,11 +99,11 @@ jobs:
 
           if [ -d ".repo" ]; then
             echo "=== 增量同步源码 ==="
-            repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --optimized-fetch || true
+            repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --optimized-fetch --depth=1 || true
           else
             echo "=== 首次同步源码（这需要几个小时）==="
             repo init -u https://github.com/AviumUI/android_manifests -b ${BRANCH} --git-lfs
-            repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+            repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --depth=1
           fi
 
           echo "源码同步完成"
@@ -113,47 +113,57 @@ jobs:
         run: |
           echo "=== 克隆设备树 ==="
 
-          # sm8750 通用设备树
+          # sm8750 平台通用设备树（共享配置）
           if [ ! -d "device/oneplus/sm8750-common" ]; then
             git clone https://github.com/LineageOS/android_device_oneplus_sm8750-common.git \
-              -b lineage-23.2 device/oneplus/sm8750-common
+              -b lineage-23.2 device/oneplus/sm8750-common --depth=1
           fi
 
-          # sm8750 组件
-                    if [ ! -d "device/oneplus/dodge" ]; then
-            git clone https://github.com/LineageOS/android_kernel_oneplus_sm8750-modules.git \
-              -b lineage-23.2 kernel/oneplus/sm8750-modules
-          fi
-          
-          # dodge 专用设备树
+          # OnePlus 13 (dodge) 机型专用设备树
           if [ ! -d "device/oneplus/dodge" ]; then
             git clone https://github.com/LineageOS/android_device_oneplus_dodge.git \
-              -b lineage-23.2 device/oneplus/dodge
+              -b lineage-23.2 device/oneplus/dodge --depth=1
           fi
+
+          echo "=== 克隆硬件驱动 ==="
 
           # hardware_oplus
           if [ ! -d "hardware/oplus" ]; then
             git clone https://github.com/LineageOS/android_hardware_oplus.git \
-              -b lineage-23.2 hardware/oplus
+              -b lineage-23.2 hardware/oplus --depth=1
           fi
 
           echo "=== 克隆内核源码 ==="
+
+          # 主内核源码 (sm8750)
           if [ ! -d "kernel/oneplus/sm8750" ]; then
             git clone https://github.com/LineageOS/android_kernel_oneplus_sm8750.git \
-              -b lineage-23.2 kernel/oneplus/sm8750
+              -b lineage-23.2 kernel/oneplus/sm8750 --depth=1
+          fi
+          
+          # 内核驱动模块 (sm8750-modules)
+                    if [ ! -d "device/oneplus/dodge" ]; then
+            git clone https://github.com/LineageOS/android_kernel_oneplus_sm8750-modules.git \
+              -b lineage-23.2 kernel/oneplus/sm8750-modules --depth=1
+          fi
+
+          # 内核设备树 (sm8750-devicetrees)
+                    if [ ! -d "device/oneplus/dodge" ]; then
+            git clone https://github.com/LineageOS/android_kernel_oneplus_sm8750-devicetrees.git \
+              -b lineage-23.2 kernel/oneplus/sm8750-devicetrees --depth=1
           fi
 
           echo "=== 克隆 Vendor 私有文件 ==="
-          # 通用 Vendor
+          # 平台通用 Vendor (sm8750-common)
           if [ ! -d "vendor/oneplus/sm8750-common" ]; then
             git clone https://github.com/TheMuppets/proprietary_vendor_oneplus_sm8750-common.git \
-              -b lineage-23.2 vendor/oneplus/sm8750-common
+              -b lineage-23.2 vendor/oneplus/sm8750-common --depth=1
           fi
 
-          # dodge 专用 Vendor
+          # 机型专用 Vendor (dodge / OnePlus 13)
           if [ ! -d "vendor/oneplus/dodge" ]; then
             git clone https://github.com/TheMuppets/proprietary_vendor_oneplus_dodge.git \
-              -b lineage-23.2 vendor/oneplus/dodge
+              -b lineage-23.2 vendor/oneplus/dodge --depth=1
           fi
 
           echo "=== 所有仓库克隆完成 ==="
@@ -165,8 +175,9 @@ jobs:
           DIRS=(
             "device/oneplus/sm8750-common"
             "device/oneplus/dodge"
-            "hardware/oplus"
             "kernel/oneplus/sm8750"
+            "kernel/oneplus/sm8750-modules"
+            "kernel/oneplus/sm8750-devicetrees"
             "vendor/oneplus/sm8750-common"
             "vendor/oneplus/dodge"
           )
